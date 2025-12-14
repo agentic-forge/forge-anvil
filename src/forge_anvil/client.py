@@ -49,18 +49,29 @@ class AnvilClient:
         """
         try:
             async with Client(self.server_url) as client:
-                # The client's _server property contains init result after connection
-                # We need to use internal attributes since fastmcp doesn't expose this nicely
-                server = client._server  # pyright: ignore[reportAttributeAccessIssue]
-                if server is None:
-                    return {"error": "Not connected"}
+                # Get server info from initialize_result (set after connection)
+                init_result = client.initialize_result
+
+                if init_result is not None:
+                    info = getattr(init_result, "serverInfo", None)
+                    name = getattr(info, "name", "Unknown") if info else "Unknown"
+                    version = getattr(info, "version", "Unknown") if info else "Unknown"
+                    return {
+                        "name": name,
+                        "version": version,
+                        "protocol_version": getattr(init_result, "protocolVersion", "Unknown"),
+                        "capabilities": _capabilities_to_dict(
+                            getattr(init_result, "capabilities", None)
+                        ),
+                        "instructions": getattr(init_result, "instructions", None),
+                    }
 
                 return {
-                    "name": getattr(server, "name", "Unknown"),
-                    "version": getattr(server, "version", "Unknown"),
-                    "protocol_version": getattr(server, "protocol_version", "Unknown"),
-                    "capabilities": _capabilities_to_dict(getattr(server, "capabilities", None)),
-                    "instructions": getattr(server, "instructions", None),
+                    "name": "Unknown",
+                    "version": "Unknown",
+                    "protocol_version": "Unknown",
+                    "capabilities": {},
+                    "instructions": None,
                 }
         except Exception as e:
             raise ConnectionError(f"Failed to connect to {self.server_url}: {e}") from e
