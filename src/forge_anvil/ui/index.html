@@ -1,22 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forge Anvil - MCP Inspector</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <style>
-        :root {
-            --bg-primary: #1a1a2e;
-            --bg-secondary: #16213e;
-            --bg-tertiary: #0f3460;
-            --text-primary: #eee;
-            --text-secondary: #aaa;
-            --accent: #e94560;
-            --success: #4ecca3;
-            --warning: #ffc107;
-            --error: #ff6b6b;
-            --border: #333;
+        /* Dark theme (default) - matches agentic-forge branding */
+        :root, [data-theme="dark"] {
+            --primary: #7c3aed;
+            --primary-dark: #5b21b6;
+            --primary-light: #a78bfa;
+            --accent: #f97316;
+            --accent-light: #fb923c;
+            --bg-primary: #0f0f14;
+            --bg-secondary: #1a1a24;
+            --bg-tertiary: #2d2d3a;
+            --bg-code: #12121a;
+            --text-primary: #e4e4eb;
+            --text-secondary: #9ca3af;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --border: #2d2d3a;
+        }
+
+        /* Light theme */
+        [data-theme="light"] {
+            --primary: #7c3aed;
+            --primary-dark: #5b21b6;
+            --primary-light: #8b5cf6;
+            --accent: #ea580c;
+            --accent-light: #f97316;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e2e8f0;
+            --bg-code: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --success: #059669;
+            --success-bg: rgba(5, 150, 105, 0.1);
+            --warning: #d97706;
+            --warning-bg: rgba(217, 119, 6, 0.1);
+            --error: #dc2626;
+            --error-bg: rgba(220, 38, 38, 0.1);
+            --border: #e2e8f0;
         }
 
         * {
@@ -30,6 +61,7 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         #app {
@@ -83,12 +115,12 @@
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: var(--primary);
             color: white;
         }
 
         .btn-primary:hover {
-            opacity: 0.9;
+            background: var(--primary-dark);
         }
 
         .btn-primary:disabled {
@@ -208,7 +240,7 @@
 
         .list-item-name {
             font-weight: 600;
-            color: var(--success);
+            color: var(--primary-light);
             margin-bottom: 4px;
         }
 
@@ -244,6 +276,79 @@
             resize: vertical;
         }
 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-field {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+        }
+
+        .form-field label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .form-field .field-name {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        .form-field .field-type {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .form-field .field-required {
+            color: var(--accent);
+            margin-left: 4px;
+        }
+
+        .form-field .field-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-field input[type="text"],
+        .form-field input[type="number"] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .form-field input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-wrapper label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
         .json-view {
             background: var(--bg-primary);
             padding: 15px;
@@ -254,6 +359,150 @@
             word-break: break-all;
             max-height: 300px;
             overflow-y: auto;
+        }
+
+        .result-card {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .result-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-card-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .result-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .result-item-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .result-item-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-item-unit {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+
+        .result-item.highlight {
+            background: var(--bg-tertiary);
+        }
+
+        .result-item.highlight .result-item-value {
+            font-size: 24px;
+            color: var(--accent);
+        }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        .result-list-item-key {
+            color: var(--text-secondary);
+        }
+
+        .result-list-item-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .result-panel {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .result-status.success {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .result-status.error {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary);
         }
 
         .debug-panel {
@@ -372,6 +621,9 @@
                 <span class="status-dot" :class="connected ? 'connected' : 'disconnected'"></span>
                 {{ connected ? 'Connected' : 'Disconnected' }}
             </div>
+            <button class="theme-toggle" @click="toggleTheme" :title="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'">
+                {{ isDarkTheme ? '☀️' : '🌙' }}
+            </button>
         </header>
 
         <div v-if="error" class="error-message">
@@ -456,24 +708,119 @@
                     </div>
                     <div v-else>
                         <div class="form-group">
-                            <label>Arguments (JSON)</label>
-                            <textarea
-                                v-model="toolArgs"
-                                placeholder="{}"
-                            ></textarea>
-                        </div>
+                            <label>Arguments</label>
+                            <div v-if="schemaFields.length === 0" class="empty-state" style="padding: 20px;">
+                                No arguments required
+                            </div>
+                            <div v-else>
+                                <div v-for="field in schemaFields" :key="field.name" class="form-field">
+                                    <label>
+                                        <span>
+                                            <span class="field-name">{{ field.name }}</span>
+                                            <span v-if="field.required" class="field-required">*</span>
+                                        </span>
+                                        <span class="field-type">{{ field.type }}</span>
+                                    </label>
+                                    <div v-if="field.description" class="field-desc">{{ field.description }}</div>
 
-                        <div v-if="toolResult" class="form-group">
-                            <label>Result</label>
-                            <div class="result-content" :class="{ 'result-error': toolResult.is_error }">
-                                {{ formatResult(toolResult) }}
+                                    <!-- Select for enum types -->
+                                    <select v-if="field.enum" v-model="formValues[field.name]">
+                                        <option :value="undefined">-- Select --</option>
+                                        <option v-for="opt in field.enum" :key="opt" :value="opt">{{ opt }}</option>
+                                    </select>
+
+                                    <!-- Checkbox for boolean -->
+                                    <div v-else-if="field.type === 'boolean'" class="checkbox-wrapper">
+                                        <input type="checkbox" :id="'field-' + field.name" v-model="formValues[field.name]">
+                                        <label :for="'field-' + field.name">{{ field.name }}</label>
+                                    </div>
+
+                                    <!-- Number input -->
+                                    <input
+                                        v-else-if="field.type === 'number' || field.type === 'integer'"
+                                        type="number"
+                                        v-model.number="formValues[field.name]"
+                                        :placeholder="field.default !== undefined ? 'Default: ' + field.default : ''"
+                                        :min="field.minimum"
+                                        :max="field.maximum"
+                                        :step="field.type === 'integer' ? 1 : 'any'"
+                                    >
+
+                                    <!-- Text input (default) -->
+                                    <input
+                                        v-else
+                                        type="text"
+                                        v-model="formValues[field.name]"
+                                        :placeholder="field.default !== undefined ? 'Default: ' + field.default : ''"
+                                    >
+                                </div>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label>Input Schema</label>
-                            <div class="json-view">{{ formatJson(selectedTool.input_schema) }}</div>
+                            <label class="debug-toggle" @click="showSchema = !showSchema">
+                                Input Schema {{ showSchema ? '▼' : '▶' }}
+                            </label>
+                            <div v-show="showSchema" class="json-view">{{ formatJson(selectedTool.inputSchema) }}</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Panel - separate from tool form -->
+            <div v-if="toolResult || calling" class="panel result-panel" style="grid-column: span 2; margin-top: 20px;">
+                <div class="panel-header">
+                    <span>
+                        Result
+                        <span v-if="toolResult && !toolResult.is_error" class="result-status success">Success</span>
+                        <span v-if="toolResult?.is_error" class="result-status error">Error</span>
+                    </span>
+                    <button v-if="toolResult" class="btn-secondary" @click="toolResult = null" style="padding: 5px 10px; font-size: 12px;">
+                        Clear
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <!-- Loading state -->
+                    <div v-if="calling" class="loading" style="justify-content: center; padding: 30px;">
+                        <div class="spinner"></div>
+                        Calling {{ selectedTool?.name }}...
+                    </div>
+
+                    <!-- Error display -->
+                    <div v-else-if="toolResult?.is_error" class="result-content result-error">
+                        {{ formatResult(toolResult) }}
+                    </div>
+
+                    <!-- Formatted result display -->
+                    <div v-else-if="parsedResult">
+                        <div class="result-card" style="margin-bottom: 0;">
+                            <div class="result-grid">
+                                <div
+                                    v-for="(value, key) in flattenedResult"
+                                    :key="key"
+                                    class="result-item"
+                                    :class="{ highlight: isHighlightField(key) }"
+                                >
+                                    <div class="result-item-label">{{ formatFieldName(key) }}</div>
+                                    <div class="result-item-value">
+                                        {{ formatFieldValue(value) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Raw JSON toggle -->
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                            <label class="debug-toggle" @click="showRawResult = !showRawResult">
+                                Raw JSON {{ showRawResult ? '▼' : '▶' }}
+                            </label>
+                            <div v-show="showRawResult" class="json-view" style="margin-top: 10px;">{{ formatResult(toolResult) }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Fallback for non-JSON results -->
+                    <div v-else-if="toolResult" class="result-content">
+                        {{ formatResult(toolResult) }}
                     </div>
                 </div>
             </div>
@@ -622,19 +969,138 @@
                 const activeTab = ref('tools');
                 const showDebug = ref(false);
 
+                // Theme management
+                const getInitialTheme = () => {
+                    const saved = localStorage.getItem('forge-anvil-theme');
+                    if (saved) return saved === 'dark';
+                    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+                };
+
+                const isDarkTheme = ref(getInitialTheme());
+
+                const applyTheme = (dark) => {
+                    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+                    localStorage.setItem('forge-anvil-theme', dark ? 'dark' : 'light');
+                };
+
+                const toggleTheme = () => {
+                    isDarkTheme.value = !isDarkTheme.value;
+                    applyTheme(isDarkTheme.value);
+                };
+
+                // Apply initial theme
+                applyTheme(isDarkTheme.value);
+
                 const tools = ref([]);
                 const resources = ref([]);
                 const prompts = ref([]);
                 const serverInfo = ref(null);
 
                 const selectedTool = ref(null);
-                const toolArgs = ref('{}');
+                const formValues = reactive({});
                 const toolResult = ref(null);
+                const showSchema = ref(false);
+                const showRawResult = ref(false);
 
                 const lastRequest = ref(null);
+
+                // Computed: parse the tool result into an object
+                const parsedResult = Vue.computed(() => {
+                    if (!toolResult.value?.content?.[0]?.text) return null;
+                    try {
+                        return JSON.parse(toolResult.value.content[0].text);
+                    } catch {
+                        return null;
+                    }
+                });
+
+                // Computed: flatten nested objects for display
+                const flattenedResult = Vue.computed(() => {
+                    if (!parsedResult.value) return {};
+
+                    const result = {};
+                    const flatten = (obj, prefix = '') => {
+                        for (const [key, value] of Object.entries(obj)) {
+                            const fullKey = prefix ? `${prefix}.${key}` : key;
+
+                            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                                // Skip 'units' object, we'll use it for formatting
+                                if (key !== 'units') {
+                                    flatten(value, fullKey);
+                                }
+                            } else if (Array.isArray(value)) {
+                                result[fullKey] = value.join(', ');
+                            } else {
+                                result[fullKey] = value;
+                            }
+                        }
+                    };
+                    flatten(parsedResult.value);
+                    return result;
+                });
+
+                // Helper: check if field should be highlighted
+                function isHighlightField(key) {
+                    const highlightFields = ['temperature', 'aqi', 'us_aqi', 'european_aqi'];
+                    return highlightFields.includes(key.toLowerCase());
+                }
+
+                // Helper: format field name for display
+                function formatFieldName(key) {
+                    return key
+                        .replace(/_/g, ' ')
+                        .replace(/\./g, ' › ')
+                        .replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                // Helper: format field value with units if available
+                function formatFieldValue(value) {
+                    if (value === null || value === undefined) return '—';
+                    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+                    if (typeof value === 'number') {
+                        // Round to 1 decimal place if it's a float
+                        return Number.isInteger(value) ? value : value.toFixed(1);
+                    }
+                    return String(value);
+                }
                 const lastResponse = ref(null);
 
+                // Computed: extract fields from tool's inputSchema
+                const schemaFields = Vue.computed(() => {
+                    if (!selectedTool.value?.inputSchema?.properties) return [];
+
+                    const schema = selectedTool.value.inputSchema;
+                    const required = schema.required || [];
+
+                    return Object.entries(schema.properties).map(([name, prop]) => {
+                        // Determine the actual type (handle anyOf for nullable types)
+                        let type = prop.type;
+                        let actualProp = prop;
+
+                        if (prop.anyOf) {
+                            // Find the non-null type
+                            const nonNullType = prop.anyOf.find(t => t.type !== 'null');
+                            if (nonNullType) {
+                                type = nonNullType.type;
+                                actualProp = { ...prop, ...nonNullType };
+                            }
+                        }
+
+                        return {
+                            name,
+                            type: type || 'string',
+                            description: prop.description,
+                            required: required.includes(name),
+                            default: prop.default,
+                            enum: actualProp.enum,
+                            minimum: actualProp.minimum,
+                            maximum: actualProp.maximum
+                        };
+                    });
+                });
+
                 let requestId = 0;
+                let sessionId = null;
 
                 async function mcpRequest(method, params = {}) {
                     const request = {
@@ -645,13 +1111,60 @@
                     };
                     lastRequest.value = request;
 
+                    const headers = {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json, text/event-stream"
+                    };
+                    if (sessionId) {
+                        headers["Mcp-Session-Id"] = sessionId;
+                    }
+
                     const response = await fetch(serverUrl.value, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: headers,
                         body: JSON.stringify(request)
                     });
 
-                    const data = await response.json();
+                    // Capture session ID from response
+                    const newSessionId = response.headers.get('mcp-session-id');
+                    if (newSessionId) {
+                        sessionId = newSessionId;
+                    }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    let data;
+
+                    if (contentType.includes('text/event-stream')) {
+                        // Parse SSE response using streaming to avoid hanging on open connections
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let buffer = '';
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+
+                            buffer += decoder.decode(value, { stream: true });
+
+                            // Look for a complete data line
+                            const lines = buffer.split('\n');
+                            for (const line of lines) {
+                                if (line.startsWith('data: ')) {
+                                    data = JSON.parse(line.substring(6));
+                                    reader.cancel(); // Stop reading once we have the data
+                                    break;
+                                }
+                            }
+                            if (data) break;
+                        }
+
+                        if (!data) {
+                            throw new Error('No data in SSE response');
+                        }
+                    } else {
+                        data = await response.json();
+                    }
+
                     lastResponse.value = data;
 
                     if (data.error) {
@@ -671,6 +1184,7 @@
                     serverInfo.value = null;
                     selectedTool.value = null;
                     toolResult.value = null;
+                    sessionId = null;
 
                     try {
                         // Initialize connection
@@ -692,9 +1206,16 @@
                         };
 
                         // Send initialized notification
+                        const notifyHeaders = {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json, text/event-stream"
+                        };
+                        if (sessionId) {
+                            notifyHeaders["Mcp-Session-Id"] = sessionId;
+                        }
                         await fetch(serverUrl.value, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: notifyHeaders,
                             body: JSON.stringify({
                                 jsonrpc: "2.0",
                                 method: "notifications/initialized"
@@ -736,8 +1257,20 @@
 
                 function selectTool(tool) {
                     selectedTool.value = tool;
-                    toolArgs.value = '{}';
                     toolResult.value = null;
+                    showRawResult.value = false;
+
+                    // Clear and initialize form values with defaults
+                    Object.keys(formValues).forEach(key => delete formValues[key]);
+
+                    if (tool?.inputSchema?.properties) {
+                        const schema = tool.inputSchema;
+                        Object.entries(schema.properties).forEach(([name, prop]) => {
+                            if (prop.default !== undefined) {
+                                formValues[name] = prop.default;
+                            }
+                        });
+                    }
                 }
 
                 async function callTool() {
@@ -748,11 +1281,12 @@
                     error.value = null;
 
                     try {
-                        let args = {};
-                        try {
-                            args = JSON.parse(toolArgs.value);
-                        } catch (e) {
-                            throw new Error('Invalid JSON in arguments');
+                        // Build arguments from form values, excluding empty/undefined values
+                        const args = {};
+                        for (const [key, value] of Object.entries(formValues)) {
+                            if (value !== undefined && value !== '' && value !== null) {
+                                args[key] = value;
+                            }
                         }
 
                         const result = await mcpRequest('tools/call', {
@@ -804,20 +1338,30 @@
                     error,
                     activeTab,
                     showDebug,
+                    showSchema,
+                    showRawResult,
+                    isDarkTheme,
+                    toggleTheme,
                     tools,
                     resources,
                     prompts,
                     serverInfo,
                     selectedTool,
-                    toolArgs,
+                    formValues,
+                    schemaFields,
                     toolResult,
+                    parsedResult,
+                    flattenedResult,
                     lastRequest,
                     lastResponse,
                     connect,
                     selectTool,
                     callTool,
                     formatJson,
-                    formatResult
+                    formatResult,
+                    isHighlightField,
+                    formatFieldName,
+                    formatFieldValue
                 };
             }
         }).mount('#app');
