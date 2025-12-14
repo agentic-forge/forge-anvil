@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forge Anvil - MCP Inspector</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #eee;
+            --text-secondary: #aaa;
+            --accent: #e94560;
+            --success: #4ecca3;
+            --warning: #ffc107;
+            --error: #ff6b6b;
+            --border: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        #app {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .connection-bar {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .connection-bar input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .connection-bar input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+        }
+
+        .status-dot.disconnected {
+            background: var(--error);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        .tab .count {
+            margin-left: 8px;
+            padding: 2px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .list-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .list-item.selected {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent);
+        }
+
+        .list-item-name {
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 4px;
+        }
+
+        .list-item-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: monospace;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .json-view {
+            background: var(--bg-primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .debug-panel {
+            margin-top: 20px;
+        }
+
+        .debug-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .debug-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid var(--error);
+            padding: 15px;
+            border-radius: 6px;
+            color: var(--error);
+        }
+
+        .result-content {
+            background: var(--bg-primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-error {
+            border-left: 3px solid var(--error);
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+        }
+
+        .capability-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Forge Anvil</h1>
+            <div class="connection-bar">
+                <input
+                    v-model="serverUrl"
+                    placeholder="MCP Server URL"
+                    @keyup.enter="connect"
+                >
+                <button
+                    class="btn-primary"
+                    @click="connect"
+                    :disabled="loading"
+                >
+                    {{ connected ? 'Reconnect' : 'Connect' }}
+                </button>
+            </div>
+            <div class="status">
+                <span class="status-dot" :class="connected ? 'connected' : 'disconnected'"></span>
+                {{ connected ? 'Connected' : 'Disconnected' }}
+            </div>
+        </header>
+
+        <div v-if="error" class="error-message">
+            {{ error }}
+        </div>
+
+        <div class="tabs">
+            <button
+                class="tab"
+                :class="{ active: activeTab === 'tools' }"
+                @click="activeTab = 'tools'"
+            >
+                Tools
+                <span class="count">{{ tools.length }}</span>
+            </button>
+            <button
+                class="tab"
+                :class="{ active: activeTab === 'resources' }"
+                @click="activeTab = 'resources'"
+            >
+                Resources
+                <span class="count">{{ resources.length }}</span>
+            </button>
+            <button
+                class="tab"
+                :class="{ active: activeTab === 'prompts' }"
+                @click="activeTab = 'prompts'"
+            >
+                Prompts
+                <span class="count">{{ prompts.length }}</span>
+            </button>
+            <button
+                class="tab"
+                :class="{ active: activeTab === 'info' }"
+                @click="activeTab = 'info'"
+            >
+                Server Info
+            </button>
+        </div>
+
+        <!-- Tools Tab -->
+        <div v-show="activeTab === 'tools'" class="main-content">
+            <div class="panel">
+                <div class="panel-header">Available Tools</div>
+                <div class="panel-content">
+                    <div v-if="loading" class="loading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div v-else-if="tools.length === 0" class="empty-state">
+                        No tools available. Connect to a server first.
+                    </div>
+                    <div
+                        v-else
+                        v-for="tool in tools"
+                        :key="tool.name"
+                        class="list-item"
+                        :class="{ selected: selectedTool?.name === tool.name }"
+                        @click="selectTool(tool)"
+                    >
+                        <div class="list-item-name">{{ tool.name }}</div>
+                        <div class="list-item-desc">{{ tool.description || 'No description' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    {{ selectedTool ? selectedTool.name : 'Select a tool' }}
+                    <button
+                        v-if="selectedTool"
+                        class="btn-primary"
+                        @click="callTool"
+                        :disabled="calling"
+                    >
+                        {{ calling ? 'Calling...' : 'Call Tool' }}
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <div v-if="!selectedTool" class="empty-state">
+                        Select a tool from the list to see its schema and call it.
+                    </div>
+                    <div v-else>
+                        <div class="form-group">
+                            <label>Arguments (JSON)</label>
+                            <textarea
+                                v-model="toolArgs"
+                                placeholder="{}"
+                            ></textarea>
+                        </div>
+
+                        <div v-if="toolResult" class="form-group">
+                            <label>Result</label>
+                            <div class="result-content" :class="{ 'result-error': toolResult.is_error }">
+                                {{ formatResult(toolResult) }}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Input Schema</label>
+                            <div class="json-view">{{ formatJson(selectedTool.input_schema) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources Tab -->
+        <div v-show="activeTab === 'resources'" class="main-content">
+            <div class="panel" style="grid-column: span 2">
+                <div class="panel-header">Available Resources</div>
+                <div class="panel-content">
+                    <div v-if="loading" class="loading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div v-else-if="resources.length === 0" class="empty-state">
+                        No resources available.
+                    </div>
+                    <div
+                        v-else
+                        v-for="resource in resources"
+                        :key="resource.uri"
+                        class="list-item"
+                    >
+                        <div class="list-item-name">{{ resource.name }}</div>
+                        <div class="list-item-desc">
+                            <strong>URI:</strong> {{ resource.uri }}
+                            <span v-if="resource.mime_type"> | <strong>Type:</strong> {{ resource.mime_type }}</span>
+                        </div>
+                        <div v-if="resource.description" class="list-item-desc">
+                            {{ resource.description }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompts Tab -->
+        <div v-show="activeTab === 'prompts'" class="main-content">
+            <div class="panel" style="grid-column: span 2">
+                <div class="panel-header">Available Prompts</div>
+                <div class="panel-content">
+                    <div v-if="loading" class="loading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div v-else-if="prompts.length === 0" class="empty-state">
+                        No prompts available.
+                    </div>
+                    <div
+                        v-else
+                        v-for="prompt in prompts"
+                        :key="prompt.name"
+                        class="list-item"
+                    >
+                        <div class="list-item-name">{{ prompt.name }}</div>
+                        <div v-if="prompt.description" class="list-item-desc">
+                            {{ prompt.description }}
+                        </div>
+                        <div v-if="prompt.arguments?.length" class="list-item-desc">
+                            <strong>Arguments:</strong>
+                            <span v-for="arg in prompt.arguments" :key="arg.name">
+                                {{ arg.name }}{{ arg.required ? '*' : '' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server Info Tab -->
+        <div v-show="activeTab === 'info'" class="main-content">
+            <div class="panel" style="grid-column: span 2">
+                <div class="panel-header">Server Information</div>
+                <div class="panel-content">
+                    <div v-if="!serverInfo" class="empty-state">
+                        Connect to a server to see its information.
+                    </div>
+                    <div v-else class="info-grid">
+                        <div class="info-row">
+                            <span class="info-label">Name:</span>
+                            <span class="info-value">{{ serverInfo.name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value">{{ serverInfo.version }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Protocol:</span>
+                            <span class="info-value">{{ serverInfo.protocol_version }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Capabilities:</span>
+                            <span class="info-value">
+                                <span
+                                    v-for="(enabled, cap) in serverInfo.capabilities"
+                                    :key="cap"
+                                    v-if="enabled"
+                                    class="capability-badge"
+                                >
+                                    {{ cap }}
+                                </span>
+                                <span v-if="Object.keys(serverInfo.capabilities || {}).length === 0">
+                                    None reported
+                                </span>
+                            </span>
+                        </div>
+                        <div v-if="serverInfo.instructions" class="info-row">
+                            <span class="info-label">Instructions:</span>
+                            <span class="info-value">{{ serverInfo.instructions }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Panel -->
+        <div class="panel debug-panel">
+            <div class="panel-header debug-toggle" @click="showDebug = !showDebug">
+                Debug {{ showDebug ? '▼' : '▶' }}
+            </div>
+            <div v-show="showDebug" class="panel-content">
+                <div class="debug-content">
+                    <div>
+                        <label>Last Request</label>
+                        <div class="json-view">{{ formatJson(lastRequest) }}</div>
+                    </div>
+                    <div>
+                        <label>Last Response</label>
+                        <div class="json-view">{{ formatJson(lastResponse) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive } = Vue;
+
+        createApp({
+            setup() {
+                const serverUrl = ref('{{DEFAULT_SERVER}}');
+                const connected = ref(false);
+                const loading = ref(false);
+                const calling = ref(false);
+                const error = ref(null);
+                const activeTab = ref('tools');
+                const showDebug = ref(false);
+
+                const tools = ref([]);
+                const resources = ref([]);
+                const prompts = ref([]);
+                const serverInfo = ref(null);
+
+                const selectedTool = ref(null);
+                const toolArgs = ref('{}');
+                const toolResult = ref(null);
+
+                const lastRequest = ref(null);
+                const lastResponse = ref(null);
+
+                let requestId = 0;
+
+                async function mcpRequest(method, params = {}) {
+                    const request = {
+                        jsonrpc: "2.0",
+                        method: method,
+                        params: params,
+                        id: ++requestId
+                    };
+                    lastRequest.value = request;
+
+                    const response = await fetch(serverUrl.value, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(request)
+                    });
+
+                    const data = await response.json();
+                    lastResponse.value = data;
+
+                    if (data.error) {
+                        throw new Error(data.error.message || 'Unknown error');
+                    }
+
+                    return data.result;
+                }
+
+                async function connect() {
+                    loading.value = true;
+                    error.value = null;
+                    connected.value = false;
+                    tools.value = [];
+                    resources.value = [];
+                    prompts.value = [];
+                    serverInfo.value = null;
+                    selectedTool.value = null;
+                    toolResult.value = null;
+
+                    try {
+                        // Initialize connection
+                        const initResult = await mcpRequest('initialize', {
+                            protocolVersion: '2024-11-05',
+                            capabilities: {},
+                            clientInfo: {
+                                name: 'Forge Anvil',
+                                version: '0.1.0'
+                            }
+                        });
+
+                        serverInfo.value = {
+                            name: initResult.serverInfo?.name || 'Unknown',
+                            version: initResult.serverInfo?.version || 'Unknown',
+                            protocol_version: initResult.protocolVersion || 'Unknown',
+                            capabilities: initResult.capabilities || {},
+                            instructions: initResult.instructions
+                        };
+
+                        // Send initialized notification
+                        await fetch(serverUrl.value, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                jsonrpc: "2.0",
+                                method: "notifications/initialized"
+                            })
+                        });
+
+                        // Fetch tools
+                        try {
+                            const toolsResult = await mcpRequest('tools/list');
+                            tools.value = toolsResult.tools || [];
+                        } catch (e) {
+                            console.log('No tools available:', e);
+                        }
+
+                        // Fetch resources
+                        try {
+                            const resourcesResult = await mcpRequest('resources/list');
+                            resources.value = resourcesResult.resources || [];
+                        } catch (e) {
+                            console.log('No resources available:', e);
+                        }
+
+                        // Fetch prompts
+                        try {
+                            const promptsResult = await mcpRequest('prompts/list');
+                            prompts.value = promptsResult.prompts || [];
+                        } catch (e) {
+                            console.log('No prompts available:', e);
+                        }
+
+                        connected.value = true;
+                    } catch (e) {
+                        error.value = `Failed to connect: ${e.message}`;
+                        console.error('Connection error:', e);
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                function selectTool(tool) {
+                    selectedTool.value = tool;
+                    toolArgs.value = '{}';
+                    toolResult.value = null;
+                }
+
+                async function callTool() {
+                    if (!selectedTool.value) return;
+
+                    calling.value = true;
+                    toolResult.value = null;
+                    error.value = null;
+
+                    try {
+                        let args = {};
+                        try {
+                            args = JSON.parse(toolArgs.value);
+                        } catch (e) {
+                            throw new Error('Invalid JSON in arguments');
+                        }
+
+                        const result = await mcpRequest('tools/call', {
+                            name: selectedTool.value.name,
+                            arguments: args
+                        });
+
+                        toolResult.value = {
+                            content: result.content || [],
+                            is_error: result.isError || false
+                        };
+                    } catch (e) {
+                        error.value = `Tool call failed: ${e.message}`;
+                    } finally {
+                        calling.value = false;
+                    }
+                }
+
+                function formatJson(obj) {
+                    if (!obj) return 'null';
+                    try {
+                        return JSON.stringify(obj, null, 2);
+                    } catch {
+                        return String(obj);
+                    }
+                }
+
+                function formatResult(result) {
+                    if (!result || !result.content) return '';
+
+                    return result.content.map(item => {
+                        if (item.type === 'text') {
+                            try {
+                                const parsed = JSON.parse(item.text);
+                                return JSON.stringify(parsed, null, 2);
+                            } catch {
+                                return item.text;
+                            }
+                        }
+                        return `[${item.type}]`;
+                    }).join('\n');
+                }
+
+                return {
+                    serverUrl,
+                    connected,
+                    loading,
+                    calling,
+                    error,
+                    activeTab,
+                    showDebug,
+                    tools,
+                    resources,
+                    prompts,
+                    serverInfo,
+                    selectedTool,
+                    toolArgs,
+                    toolResult,
+                    lastRequest,
+                    lastResponse,
+                    connect,
+                    selectTool,
+                    callTool,
+                    formatJson,
+                    formatResult
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

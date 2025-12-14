@@ -1,0 +1,220 @@
+"""MCP client wrapper for Anvil."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastmcp import Client
+
+
+class AnvilError(Exception):
+    """Base exception for Anvil errors."""
+
+
+class ConnectionError(AnvilError):
+    """Failed to connect to MCP server."""
+
+
+class ToolCallError(AnvilError):
+    """Failed to call a tool."""
+
+
+class AnvilClient:
+    """Wrapper around fastmcp.Client for CLI/UI usage.
+
+    Provides a simpler interface that returns plain dictionaries
+    instead of MCP types, making it easier to serialize to JSON.
+    """
+
+    def __init__(self, server_url: str, timeout: float = 30.0) -> None:
+        """Initialize the client.
+
+        Args:
+            server_url: URL of the MCP server (e.g., http://localhost:8000/mcp)
+            timeout: Request timeout in seconds
+        """
+        self.server_url = server_url
+        self.timeout = timeout
+
+    async def get_server_info(self) -> dict[str, Any]:
+        """Get server capabilities and info.
+
+        Returns:
+            Dictionary with server info:
+            - name: Server name
+            - version: Server version
+            - protocol_version: MCP protocol version
+            - capabilities: Server capabilities
+            - instructions: Server instructions (if provided)
+        """
+        try:
+            async with Client(self.server_url) as client:
+                # The client's _server property contains init result after connection
+                # We need to use internal attributes since fastmcp doesn't expose this nicely
+                server = client._server  # pyright: ignore[reportAttributeAccessIssue]
+                if server is None:
+                    return {"error": "Not connected"}
+
+                return {
+                    "name": getattr(server, "name", "Unknown"),
+                    "version": getattr(server, "version", "Unknown"),
+                    "protocol_version": getattr(server, "protocol_version", "Unknown"),
+                    "capabilities": _capabilities_to_dict(getattr(server, "capabilities", None)),
+                    "instructions": getattr(server, "instructions", None),
+                }
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to {self.server_url}: {e}") from e
+
+    async def list_tools(self) -> list[dict[str, Any]]:
+        """List available tools from the server.
+
+        Returns:
+            List of tools with name, description, and input_schema.
+        """
+        try:
+            async with Client(self.server_url) as client:
+                tools = await client.list_tools()
+                return [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "input_schema": tool.inputSchema,
+                    }
+                    for tool in tools
+                ]
+        except Exception as e:
+            raise ConnectionError(f"Failed to list tools: {e}") from e
+
+    async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Call a tool and return the result.
+
+        Args:
+            name: Tool name
+            arguments: Tool arguments
+
+        Returns:
+            Dictionary with content and is_error flag.
+        """
+        try:
+            async with Client(self.server_url) as client:
+                result = await client.call_tool(name, arguments or {})
+                return {
+                    "content": _content_to_list(result),
+                    "is_error": getattr(result, "isError", False),
+                }
+        except Exception as e:
+            raise ToolCallError(f"Failed to call tool '{name}': {e}") from e
+
+    async def list_resources(self) -> list[dict[str, Any]]:
+        """List available resources from the server.
+
+        Returns:
+            List of resources with uri, name, description, and mime_type.
+        """
+        try:
+            async with Client(self.server_url) as client:
+                resources = await client.list_resources()
+                return [
+                    {
+                        "uri": str(resource.uri),
+                        "name": resource.name,
+                        "description": resource.description,
+                        "mime_type": resource.mimeType,
+                    }
+                    for resource in resources
+                ]
+        except Exception as e:
+            raise ConnectionError(f"Failed to list resources: {e}") from e
+
+    async def list_prompts(self) -> list[dict[str, Any]]:
+        """List available prompts from the server.
+
+        Returns:
+            List of prompts with name, description, and arguments.
+        """
+        try:
+            async with Client(self.server_url) as client:
+                prompts = await client.list_prompts()
+                return [
+                    {
+                        "name": prompt.name,
+                        "description": prompt.description,
+                        "arguments": [
+                            {
+                                "name": arg.name,
+                                "description": arg.description,
+                                "required": arg.required,
+                            }
+                            for arg in (prompt.arguments or [])
+                        ],
+                    }
+                    for prompt in prompts
+                ]
+        except Exception as e:
+            raise ConnectionError(f"Failed to list prompts: {e}") from e
+
+    async def ping(self) -> bool:
+        """Check if server is responsive.
+
+        Returns:
+            True if server responds, False otherwise.
+        """
+        try:
+            async with Client(self.server_url) as client:
+                await client.ping()
+                return True
+        except Exception:
+            return False
+
+
+def _capabilities_to_dict(capabilities: Any) -> dict[str, Any]:
+    """Convert server capabilities to a dictionary."""
+    if capabilities is None:
+        return {}
+
+    result: dict[str, Any] = {}
+
+    # Check for common capability attributes
+    if hasattr(capabilities, "tools") and capabilities.tools:
+        result["tools"] = True
+    if hasattr(capabilities, "resources") and capabilities.resources:
+        result["resources"] = True
+    if hasattr(capabilities, "prompts") and capabilities.prompts:
+        result["prompts"] = True
+    if hasattr(capabilities, "logging") and capabilities.logging:
+        result["logging"] = True
+
+    return result
+
+
+def _content_to_list(result: Any) -> list[dict[str, Any]]:
+    """Convert tool result content to a list of dictionaries."""
+    content_list = []
+
+    # Handle different result types
+    if hasattr(result, "content"):
+        items = result.content if isinstance(result.content, list) else [result.content]
+    elif isinstance(result, list):
+        items = result
+    else:
+        items = [result]
+
+    for item in items:
+        if hasattr(item, "text"):
+            content_list.append({"type": "text", "text": item.text})
+        elif hasattr(item, "data"):
+            content_list.append(
+                {
+                    "type": "image",
+                    "data": item.data,
+                    "mime_type": getattr(item, "mimeType", "image/png"),
+                }
+            )
+        elif isinstance(item, str):
+            content_list.append({"type": "text", "text": item})
+        elif isinstance(item, dict):
+            content_list.append(item)
+        else:
+            content_list.append({"type": "text", "text": str(item)})
+
+    return content_list
