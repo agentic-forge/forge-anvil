@@ -40,6 +40,9 @@ anvil list-tools --json
 # List resources and prompts
 anvil list-resources
 anvil list-prompts
+
+# Check if server is responsive
+anvil ping
 ```
 
 ### Environment Variable
