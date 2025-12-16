@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
-from typing import Annotated
+import warnings
 
-import typer
+# Suppress deprecation warning from upstream MCP SDK about streamable_http_client
+# See: https://github.com/jlowin/fastmcp/issues/XXX (tracked upstream)
+warnings.filterwarnings(
+    "ignore",
+    message="Use `streamable_http_client` instead.",
+    category=DeprecationWarning,
+)
 
-from forge_anvil.client import AnvilClient, AnvilError
-from forge_anvil.output import (
+import asyncio  # noqa: E402
+import json  # noqa: E402
+from typing import Annotated  # noqa: E402
+
+import typer  # noqa: E402
+
+from forge_anvil.client import AnvilClient, AnvilError  # noqa: E402
+from forge_anvil.output import (  # noqa: E402
     console,
     print_error,
     print_info,

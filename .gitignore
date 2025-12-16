@@ -39,6 +39,8 @@ htmlcov/
 .nox/
 
 # Local development
+CLAUDE.md
+.claude/
 .claude-work/
 .env
 .env.local
