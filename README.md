@@ -54,6 +54,26 @@ export ANVIL_SERVER=http://localhost:8000/mcp
 anvil list-tools
 ```
 
+### Custom Headers
+
+Some MCP servers require custom HTTP headers (e.g., API keys, database IDs). Use the `--header` / `-H` option:
+
+```bash
+# Single header
+anvil call get_user --header "x-database-id: db_123" --arg user_id=USER_001
+
+# Multiple headers
+anvil list-tools -H "x-api-key: secret" -H "x-org-id: org_456"
+
+# Combined with other options
+anvil call my_tool \
+  --server https://example.com/mcp \
+  --header "Authorization: Bearer token123" \
+  --json-args '{"query": "test"}'
+```
+
+The `--header` option is available on all commands: `info`, `list-tools`, `call`, `list-resources`, `list-prompts`, and `ping`.
+
 ## Web UI
 
 Launch the interactive inspector:
@@ -63,6 +83,15 @@ anvil ui --port 5000
 ```
 
 Open http://localhost:5000 in your browser.
+
+### Web UI Features
+
+- **Server Connection** - Connect to any MCP server URL
+- **Custom Headers** - Expand the "Custom Headers" section to add headers (useful for API keys, database IDs, etc.)
+- **Tools Tab** - Browse tools, fill in arguments with dynamic forms, and call tools
+- **Resources/Prompts Tabs** - View available resources and prompts
+- **Server Info Tab** - View server capabilities and metadata
+- **Debug Panel** - Inspect raw JSON requests and responses
 
 ## Using with Forge MCP Servers
 
