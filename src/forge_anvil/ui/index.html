@@ -597,6 +597,107 @@
             font-size: 12px;
             margin-right: 5px;
         }
+
+        /* Headers section */
+        .headers-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .headers-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .headers-toggle:hover {
+            color: var(--accent);
+        }
+
+        .headers-content {
+            margin-top: 15px;
+        }
+
+        .header-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .header-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .header-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .header-row input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-icon {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-icon.danger:hover {
+            background: var(--error-bg);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .btn-add-header {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-add-header:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .headers-count {
+            font-size: 12px;
+            padding: 2px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -625,6 +726,35 @@
                 {{ isDarkTheme ? '☀️' : '🌙' }}
             </button>
         </header>
+
+        <!-- Custom Headers Section -->
+        <div class="headers-section">
+            <div class="headers-toggle" @click="showHeaders = !showHeaders">
+                <span>{{ showHeaders ? '▼' : '▶' }}</span>
+                <span>Custom Headers</span>
+                <span v-if="customHeaders.length > 0" class="headers-count">{{ customHeaders.length }}</span>
+            </div>
+            <div v-show="showHeaders" class="headers-content">
+                <div v-for="(header, index) in customHeaders" :key="index" class="header-row">
+                    <input
+                        v-model="header.key"
+                        placeholder="Header name (e.g., x-database-id)"
+                        @input="onHeaderChange"
+                    >
+                    <input
+                        v-model="header.value"
+                        placeholder="Header value"
+                        @input="onHeaderChange"
+                    >
+                    <button class="btn-icon danger" @click="removeHeader(index)" title="Remove header">
+                        ✕
+                    </button>
+                </div>
+                <button class="btn-add-header" @click="addHeader">
+                    + Add Header
+                </button>
+            </div>
+        </div>
 
         <div v-if="error" class="error-message">
             {{ error }}
@@ -969,6 +1099,32 @@
                 const activeTab = ref('tools');
                 const showDebug = ref(false);
 
+                // Custom headers management
+                const customHeaders = ref([]);
+                const showHeaders = ref(false);
+
+                function addHeader() {
+                    customHeaders.value.push({ key: '', value: '' });
+                }
+
+                function removeHeader(index) {
+                    customHeaders.value.splice(index, 1);
+                }
+
+                function onHeaderChange() {
+                    // This function can be used for validation or auto-save if needed
+                }
+
+                function getCustomHeadersObject() {
+                    const headers = {};
+                    for (const h of customHeaders.value) {
+                        if (h.key && h.value) {
+                            headers[h.key] = h.value;
+                        }
+                    }
+                    return headers;
+                }
+
                 // Theme management
                 const getInitialTheme = () => {
                     const saved = localStorage.getItem('forge-anvil-theme');
@@ -1111,9 +1267,11 @@
                     };
                     lastRequest.value = request;
 
+                    // Build headers: start with defaults, add custom headers, then session ID
                     const headers = {
                         "Content-Type": "application/json",
-                        "Accept": "application/json, text/event-stream"
+                        "Accept": "application/json, text/event-stream",
+                        ...getCustomHeadersObject()
                     };
                     if (sessionId) {
                         headers["Mcp-Session-Id"] = sessionId;
@@ -1208,7 +1366,8 @@
                         // Send initialized notification
                         const notifyHeaders = {
                             "Content-Type": "application/json",
-                            "Accept": "application/json, text/event-stream"
+                            "Accept": "application/json, text/event-stream",
+                            ...getCustomHeadersObject()
                         };
                         if (sessionId) {
                             notifyHeaders["Mcp-Session-Id"] = sessionId;
@@ -1342,6 +1501,13 @@
                     showRawResult,
                     isDarkTheme,
                     toggleTheme,
+                    // Custom headers
+                    customHeaders,
+                    showHeaders,
+                    addHeader,
+                    removeHeader,
+                    onHeaderChange,
+                    // Data
                     tools,
                     resources,
                     prompts,

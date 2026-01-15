@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastmcp import Client
+from fastmcp.client.transports import StreamableHttpTransport
 
 
 class AnvilError(Exception):
@@ -26,15 +27,32 @@ class AnvilClient:
     instead of MCP types, making it easier to serialize to JSON.
     """
 
-    def __init__(self, server_url: str, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        server_url: str,
+        timeout: float = 30.0,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         """Initialize the client.
 
         Args:
             server_url: URL of the MCP server (e.g., http://localhost:8000/mcp)
             timeout: Request timeout in seconds
+            headers: Custom HTTP headers to send with requests
         """
         self.server_url = server_url
         self.timeout = timeout
+        self.headers = headers or {}
+
+    def _create_transport(self) -> StreamableHttpTransport:
+        """Create transport with headers support."""
+        return StreamableHttpTransport(url=self.server_url, headers=self.headers)
+
+    def _create_client(self) -> Client:
+        """Create a Client instance with headers if specified."""
+        if self.headers:
+            return Client(self._create_transport())
+        return Client(self.server_url)
 
     async def get_server_info(self) -> dict[str, Any]:
         """Get server capabilities and info.
@@ -48,7 +66,7 @@ class AnvilClient:
             - instructions: Server instructions (if provided)
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 # Get server info from initialize_result (set after connection)
                 init_result = client.initialize_result
 
@@ -83,7 +101,7 @@ class AnvilClient:
             List of tools with name, description, and input_schema.
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 tools = await client.list_tools()
                 return [
                     {
@@ -107,7 +125,7 @@ class AnvilClient:
             Dictionary with content and is_error flag.
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 result = await client.call_tool(name, arguments or {})
                 return {
                     "content": _content_to_list(result),
@@ -123,7 +141,7 @@ class AnvilClient:
             List of resources with uri, name, description, and mime_type.
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 resources = await client.list_resources()
                 return [
                     {
@@ -144,7 +162,7 @@ class AnvilClient:
             List of prompts with name, description, and arguments.
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 prompts = await client.list_prompts()
                 return [
                     {
@@ -171,7 +189,7 @@ class AnvilClient:
             True if server responds, False otherwise.
         """
         try:
-            async with Client(self.server_url) as client:
+            async with self._create_client() as client:
                 await client.ping()
                 return True
         except Exception:

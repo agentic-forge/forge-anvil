@@ -13,11 +13,30 @@ class TestAnvilClientInit:
         client = AnvilClient("http://localhost:8000/mcp")
         assert client.server_url == "http://localhost:8000/mcp"
         assert client.timeout == 30.0
+        assert client.headers == {}
 
     def test_init_with_custom_timeout(self) -> None:
         """Test client initialization with custom timeout."""
         client = AnvilClient("http://localhost:8000/mcp", timeout=60.0)
         assert client.timeout == 60.0
+
+    def test_init_with_headers(self) -> None:
+        """Test client initialization with custom headers."""
+        headers = {"x-database-id": "db_123", "x-custom": "value"}
+        client = AnvilClient("http://localhost:8000/mcp", headers=headers)
+        assert client.headers == headers
+
+    def test_init_with_none_headers(self) -> None:
+        """Test client initialization with None headers defaults to empty dict."""
+        client = AnvilClient("http://localhost:8000/mcp", headers=None)
+        assert client.headers == {}
+
+    def test_headers_passed_to_transport(self) -> None:
+        """Test that headers are passed to the transport."""
+        headers = {"x-test": "value"}
+        client = AnvilClient("http://localhost:8000/mcp", headers=headers)
+        transport = client._create_transport()
+        assert transport.headers == headers
 
 
 class TestAnvilErrors:

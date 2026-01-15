@@ -47,6 +47,15 @@ ServerOption = Annotated[
     ),
 ]
 
+HeaderOption = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--header",
+        "-H",
+        help="Custom header in 'Key: Value' format (can be repeated)",
+    ),
+]
+
 JsonOption = Annotated[
     bool,
     typer.Option(
@@ -57,6 +66,29 @@ JsonOption = Annotated[
 ]
 
 
+def parse_headers(headers: list[str] | None) -> dict[str, str]:
+    """Parse header strings into a dictionary.
+
+    Args:
+        headers: List of headers in 'Key: Value' format
+
+    Returns:
+        Dictionary of header names to values
+
+    Raises:
+        typer.BadParameter: If a header is not in 'Key: Value' format
+    """
+    if not headers:
+        return {}
+    result = {}
+    for h in headers:
+        if ": " not in h:
+            raise typer.BadParameter(f"Invalid header format: '{h}'. Use 'Key: Value' format.")
+        key, value = h.split(": ", 1)
+        result[key] = value
+    return result
+
+
 def run_async(coro: object) -> None:
     """Helper to run async coroutines from sync Typer commands."""
     asyncio.run(coro)  # type: ignore[arg-type]
@@ -65,12 +97,14 @@ def run_async(coro: object) -> None:
 @app.command()
 def info(
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
     json_output: JsonOption = False,
 ) -> None:
     """Show server info and capabilities."""
 
     async def _info() -> None:
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         result = await client.get_server_info()
         if json_output:
             console.print_json(data=result)
@@ -87,6 +121,7 @@ def info(
 @app.command("list-tools")
 def list_tools(
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
     json_output: JsonOption = False,
     detail: Annotated[
         str | None,
@@ -100,7 +135,8 @@ def list_tools(
     """List available tools from the server."""
 
     async def _list() -> None:
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         tools = await client.list_tools()
 
         if detail:
@@ -130,6 +166,7 @@ def list_tools(
 def call(
     tool: Annotated[str, typer.Argument(help="Tool name to call")],
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
     arg: Annotated[
         list[str] | None,
         typer.Option(
@@ -179,7 +216,8 @@ def call(
                 except json.JSONDecodeError:
                     arguments[key] = value
 
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         result = await client.call_tool(tool, arguments or None)
 
         if json_output:
@@ -197,12 +235,14 @@ def call(
 @app.command("list-resources")
 def list_resources(
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
     json_output: JsonOption = False,
 ) -> None:
     """List available resources from the server."""
 
     async def _list() -> None:
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         resources = await client.list_resources()
         if json_output:
             console.print_json(data=resources)
@@ -219,12 +259,14 @@ def list_resources(
 @app.command("list-prompts")
 def list_prompts(
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
     json_output: JsonOption = False,
 ) -> None:
     """List available prompts from the server."""
 
     async def _list() -> None:
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         prompts = await client.list_prompts()
         if json_output:
             console.print_json(data=prompts)
@@ -241,11 +283,13 @@ def list_prompts(
 @app.command()
 def ping(
     server: ServerOption = "http://localhost:8000/mcp",
+    header: HeaderOption = None,
 ) -> None:
     """Check if server is responsive."""
 
     async def _ping() -> None:
-        client = AnvilClient(server)
+        headers = parse_headers(header)
+        client = AnvilClient(server, headers=headers)
         if await client.ping():
             console.print(f"[green]Server at {server} is responsive[/green]")
         else:
